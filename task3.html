@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advanced Music Player</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #141e30, #243b55);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  color: white;
+}
+
+.player {
+  width: 340px;
+  padding: 20px;
+  border-radius: 20px;
+  backdrop-filter: blur(15px);
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+  text-align: center;
+}
+
+.cover {
+  width: 100%;
+  height: 200px;
+  border-radius: 15px;
+  object-fit: cover;
+  margin-bottom: 10px;
+}
+
+h2 { margin: 10px 0 5px; }
+p { margin: 0 0 10px; color: #ccc; }
+
+.controls button {
+  margin: 8px;
+  padding: 10px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: #ffffff22;
+  color: white;
+  font-size: 16px;
+  transition: 0.3s;
+}
+
+.controls button:hover {
+  background: #ffffff55;
+}
+
+.active-btn {
+  background: #1db954 !important;
+}
+
+input[type="range"] {
+  width: 100%;
+}
+
+.time {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+li {
+  padding: 6px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+li.active {
+  background: #1db954;
+}
+
+li:hover {
+  background: #ffffff33;
+}
+</style>
+
+</head>
+<body>
+
+<div class="player">
+
+  <img id="cover" class="cover" src="Music.jpeg">
+
+  <h2 id="title">Title</h2>
+  <p id="artist">Artist</p>
+
+  <audio id="audio"></audio>
+
+  <div class="time">
+    <span id="currentTime">0:00</span>
+    <span id="duration">0:00</span>
+  </div>
+
+  <input type="range" id="progress" value="0">
+
+  <div class="controls">
+    <button id="shuffleBtn">🔀</button>
+    <button onclick="prevSong()">⏮</button>
+    <button onclick="playPause()" id="playBtn">▶</button>
+    <button onclick="nextSong()">⏭</button>
+    <button id="repeatBtn">🔁</button>
+  </div>
+
+  <input type="range" id="volume" min="0" max="1" step="0.1" value="1">
+
+  <ul id="playlist"></ul>
+
+</div>
+
+<script>
+const songs = [
+  { title: "Song 1", artist: "Artist 1", src: "Song1.mp3", cover: "Music1.avif" },
+  { title: "Song 2", artist: "Artist 2", src: "Song2.mp3", cover: "Music2.avif" },
+  { title: "Song 3", artist: "Artist 3", src: "Song3.mp3", cover: "Music3.avif" },
+  { title: "Song 4", artist: "Artist 4", src: "Song4.mp3", cover: "Music4.avif" },
+  { title: "Song 5", artist: "Artist 5", src: "Song5.mp3", cover: "Music5.jpg" },
+  { title: "Song 6", artist: "Artist 6", src: "Song6.mp3", cover: "Music6.jpg" },
+  { title: "Song 7", artist: "Artist 7", src: "Song7.mp3", cover: "Music7.jpg" },
+  { title: "Song 8", artist: "Artist 8", src: "Song8.mp3", cover: "Music8.jpg" },
+  { title: "Song 9", artist: "Artist 9", src: "Song9.mp3", cover: "Music9.jpg" },
+  { title: "Song 10", artist: "Artist 10", src: "Song10.mp3", cover: "Music10.avif"}
+];
+
+let currentSong = 0;
+let isPlaying = false;
+let isShuffle = false;
+let repeatMode = 0; // 0=off,1=all,2=one
+
+const audio = document.getElementById("audio");
+const title = document.getElementById("title");
+const artist = document.getElementById("artist");
+const cover = document.getElementById("cover");
+const progress = document.getElementById("progress");
+const volume = document.getElementById("volume");
+const playlist = document.getElementById("playlist");
+const playBtn = document.getElementById("playBtn");
+const shuffleBtn = document.getElementById("shuffleBtn");
+const repeatBtn = document.getElementById("repeatBtn");
+const currentTimeEl = document.getElementById("currentTime");
+const durationEl = document.getElementById("duration");
+
+// Load song
+function loadSong(i) {
+  let song = songs[i];
+  audio.src = song.src;
+  title.textContent = song.title;
+  artist.textContent = song.artist;
+  cover.src = song.cover;
+  highlight();
+}
+
+// Play / Pause
+function playPause() {
+  if (isPlaying) {
+    audio.pause();
+    playBtn.textContent = "▶";
+  } else {
+    audio.play();
+    playBtn.textContent = "⏸";
+  }
+  isPlaying = !isPlaying;
+}
+
+// Next
+function nextSong() {
+  if (isShuffle) {
+    currentSong = Math.floor(Math.random() * songs.length);
+  } else {
+    currentSong = (currentSong + 1) % songs.length;
+  }
+  loadSong(currentSong);
+  audio.play();
+  isPlaying = true;
+  playBtn.textContent = "⏸";
+}
+
+// Previous
+function prevSong() {
+  currentSong = (currentSong - 1 + songs.length) % songs.length;
+  loadSong(currentSong);
+  audio.play();
+  isPlaying = true;
+}
+
+// Shuffle toggle
+shuffleBtn.onclick = () => {
+  isShuffle = !isShuffle;
+  shuffleBtn.classList.toggle("active-btn", isShuffle);
+};
+
+// Repeat toggle
+repeatBtn.onclick = () => {
+  repeatMode = (repeatMode + 1) % 3;
+
+  repeatBtn.textContent =
+    repeatMode === 0 ? "🔁" :
+    repeatMode === 1 ? "🔁" :
+    "🔂";
+
+  repeatBtn.classList.toggle("active-btn", repeatMode !== 0);
+};
+
+// Time update
+audio.addEventListener("timeupdate", () => {
+  progress.value = (audio.currentTime / audio.duration) * 100 || 0;
+  currentTimeEl.textContent = format(audio.currentTime);
+});
+
+// Duration
+audio.addEventListener("loadedmetadata", () => {
+  durationEl.textContent = format(audio.duration);
+});
+
+// Seek
+progress.oninput = () => {
+  audio.currentTime = (progress.value / 100) * audio.duration;
+};
+
+// Volume
+volume.oninput = () => audio.volume = volume.value;
+
+// End handling
+audio.onended = () => {
+  if (repeatMode === 2) {
+    audio.currentTime = 0;
+    audio.play();
+  } else if (repeatMode === 1) {
+    nextSong();
+  }
+};
+
+// Format time
+function format(t) {
+  let m = Math.floor(t / 60);
+  let s = Math.floor(t % 60);
+  return m + ":" + (s < 10 ? "0" + s : s);
+}
+
+// Playlist
+songs.forEach((s, i) => {
+  let li = document.createElement("li");
+  li.textContent = s.title + " - " + s.artist;
+  li.onclick = () => {
+    currentSong = i;
+    loadSong(i);
+    audio.play();
+    isPlaying = true;
+    playBtn.textContent = "⏸";
+  };
+  playlist.appendChild(li);
+});
+
+// Highlight
+function highlight() {
+  document.querySelectorAll("li").forEach((li, i) => {
+    li.classList.toggle("active", i === currentSong);
+  });
+}
+
+// Init
+loadSong(currentSong);
+</script>
+
+</body>
+</html>
